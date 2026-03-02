@@ -7,7 +7,8 @@ export default function AnalysisPanel({
   onAnalyze,
   analysis,
   loading,
-  stage,
+  stageIndex,
+  loadingStages,
   error,
 }) {
   const fileInputRef = useRef(null)
@@ -66,11 +67,40 @@ export default function AnalysisPanel({
         )}
       </div>
 
-      {/* Loading state with stage label */}
+      {/* Multi-step loading indicator */}
       {loading && (
-        <div className="text-center py-12">
-          <div className="inline-block w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-sm text-gray-400">{stage}</p>
+        <div className="py-8">
+          <div className="space-y-4 max-w-xs mx-auto">
+            {loadingStages.map((label, i) => {
+              const done = i < stageIndex
+              const active = i === stageIndex
+              return (
+                <div key={label} className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
+                    done
+                      ? 'bg-emerald-600 border-emerald-600'
+                      : active
+                        ? 'border-blue-500'
+                        : 'border-gray-700'
+                  }`}>
+                    {done && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                    {active && (
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    )}
+                  </div>
+                  <span className={`text-sm ${
+                    done ? 'text-gray-600 line-through' : active ? 'text-gray-100' : 'text-gray-600'
+                  }`}>
+                    {label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

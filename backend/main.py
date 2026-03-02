@@ -1,13 +1,12 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from dotenv import load_dotenv
-
 from session_store import SessionStore
 from pdf_parser import extract_and_chunk
 from ai_chain import run_analysis_chain
-
-load_dotenv()
 
 app = FastAPI(title="Research Paper Analyzer")
 

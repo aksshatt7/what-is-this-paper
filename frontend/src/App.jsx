@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import ContextPanel from './components/ContextPanel'
 import AnalysisPanel from './components/AnalysisPanel'
-import { useAnalysis } from './hooks/useAnalysis'
+import { useAnalysis, LOADING_STAGES } from './hooks/useAnalysis'
+import { DEMO_CONTEXT } from './demo'
 
 // A fixed session ID is fine for a single-user portfolio project.
 // For multi-user, you'd generate a UUID per browser session and store it in localStorage.
@@ -9,7 +10,12 @@ const SESSION_ID = 'user-session-1'
 
 export default function App() {
   const [contextSaved, setContextSaved] = useState(false)
-  const { analysis, loading, stage, error, analyzePaper, saveContext } = useAnalysis()
+  const { analysis, loading, stageIndex, error, analyzePaper, saveContext, loadDemo } = useAnalysis()
+
+  async function handleDemo() {
+    await loadDemo(SESSION_ID)
+    setContextSaved(true)
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -24,6 +30,8 @@ export default function App() {
           saveContext={saveContext}
           onContextSaved={() => setContextSaved(true)}
           contextSaved={contextSaved}
+          demoContext={DEMO_CONTEXT}
+          onDemo={handleDemo}
         />
         <AnalysisPanel
           sessionId={SESSION_ID}
@@ -31,7 +39,8 @@ export default function App() {
           onAnalyze={analyzePaper}
           analysis={analysis}
           loading={loading}
-          stage={stage}
+          stageIndex={stageIndex}
+          loadingStages={LOADING_STAGES}
           error={error}
         />
       </main>

@@ -1,17 +1,32 @@
 import { useState } from 'react'
+import { DEMO_CONTEXT, DEMO_ANALYSIS } from '../demo'
 
 const API_BASE = '/api'
+
+export const LOADING_STAGES = [
+  'Parsing PDF',
+  'Extracting key methods',
+  'Mapping to your context',
+  'Generating suggestions',
+]
 
 export function useAnalysis() {
   const [analysis, setAnalysis] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [stage, setStage] = useState('')
+  const [stageIndex, setStageIndex] = useState(0)
   const [error, setError] = useState(null)
 
   async function analyzePaper(sessionId, file) {
     setLoading(true)
     setError(null)
     setAnalysis(null)
+    setStageIndex(0)
+
+    let idx = 0
+    const stageTimer = setInterval(() => {
+      idx = Math.min(idx + 1, LOADING_STAGES.length - 1)
+      setStageIndex(idx)
+    }, 3500)
 
     try {
       // FormData is how you send a file upload over fetch — the browser handles
@@ -19,28 +34,24 @@ export function useAnalysis() {
       const formData = new FormData()
       formData.append('file', file)
 
-      setStage('Extracting paper text...')
-
       const res = await fetch(`${API_BASE}/analyze-paper?session_id=${sessionId}`, {
         method: 'POST',
         body: formData,
       })
-
-      setStage('Running AI analysis...')
 
       if (!res.ok) {
         const err = await res.json()
         throw new Error(err.detail || 'Analysis failed')
       }
 
-      setStage('Processing results...')
       const data = await res.json()
       setAnalysis(data)
     } catch (e) {
       setError(e.message)
     } finally {
+      clearInterval(stageTimer)
       setLoading(false)
-      setStage('')
+      setStageIndex(0)
     }
   }
 
@@ -53,5 +64,12 @@ export function useAnalysis() {
     if (!res.ok) throw new Error('Failed to save context')
   }
 
-  return { analysis, loading, stage, error, analyzePaper, saveContext }
+  async function loadDemo(sessionId) {
+    // Save demo context to backend so follow-up real paper uploads work correctly.
+    await saveContext(sessionId, DEMO_CONTEXT)
+    setAnalysis(DEMO_ANALYSIS)
+    setError(null)
+  }
+
+  return { analysis, loading, stageIndex, error, analyzePaper, saveContext, loadDemo }
 }

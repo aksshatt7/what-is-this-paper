@@ -1,10 +1,11 @@
 import { useState } from 'react'
 
-export default function ContextPanel({ sessionId, onContextSaved, contextSaved, saveContext }) {
+export default function ContextPanel({ sessionId, onContextSaved, contextSaved, saveContext, demoContext, onDemo }) {
   const [context, setContext] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [fileLoaded, setFileLoaded] = useState(null)
+  const [demoing, setDemoing] = useState(false)
 
   // FileReader API: reads a local file as text without uploading it to a server.
   // We use this to let users load their .py or .ipynb files directly into the textarea.
@@ -33,6 +34,16 @@ export default function ContextPanel({ sessionId, onContextSaved, contextSaved, 
     }
   }
 
+  async function handleDemo() {
+    setDemoing(true)
+    setContext(demoContext)
+    try {
+      await onDemo()
+    } finally {
+      setDemoing(false)
+    }
+  }
+
   return (
     <div className="flex flex-col p-6 overflow-y-auto">
       <div className="mb-4">
@@ -42,9 +53,17 @@ export default function ContextPanel({ sessionId, onContextSaved, contextSaved, 
         </p>
       </div>
 
-      {/* File loader */}
-      <div className="mb-3">
-        <label className="cursor-pointer w-fit">
+      {/* Demo + file loader row */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <button
+          onClick={handleDemo}
+          disabled={demoing}
+          className="text-xs border border-blue-700 rounded px-3 py-1.5 bg-blue-950 hover:bg-blue-900 text-blue-300 hover:text-blue-100 transition-colors disabled:opacity-50"
+        >
+          {demoing ? 'Loading demo...' : 'Try a demo'}
+        </button>
+
+        <label className="cursor-pointer">
           <span className="text-xs border border-gray-700 rounded px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors">
             Upload file (.py, .ipynb, .txt)
           </span>
@@ -56,7 +75,7 @@ export default function ContextPanel({ sessionId, onContextSaved, contextSaved, 
           />
         </label>
         {fileLoaded && (
-          <p className="text-xs text-emerald-400 mt-1.5">Loaded: {fileLoaded}</p>
+          <p className="text-xs text-emerald-400">Loaded: {fileLoaded}</p>
         )}
       </div>
 

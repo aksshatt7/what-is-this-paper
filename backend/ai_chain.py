@@ -1,11 +1,11 @@
-import anthropic
+import openai
 import json
 import os
 from typing import List
 
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "gpt-4o-mini"
 
 # How many chunks to send to the AI. Each chunk is ~1500 chars (~375 tokens).
 # 6 chunks ≈ 2250 tokens of paper text — enough for abstract + intro + methods.
@@ -13,14 +13,16 @@ MAX_CHUNKS = 6
 
 
 def _call(system: str, user: str) -> str:
-    """Make a single Claude API call and return the raw text response."""
-    response = client.messages.create(
+    """Make a single OpenAI API call and return the raw text response."""
+    response = client.chat.completions.create(
         model=MODEL,
         max_tokens=1500,
-        system=system,
-        messages=[{"role": "user", "content": user}],
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
     )
-    return response.content[0].text
+    return response.choices[0].message.content
 
 
 def _parse_json(raw: str) -> dict | list:
