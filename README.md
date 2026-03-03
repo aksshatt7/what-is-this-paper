@@ -1,4 +1,4 @@
-# Research Paper Analyzer
+# What-is-this-Paper ? : Research Paper Analyzer
 
 Upload a research paper PDF. Describe your ML pipeline. Get a structured breakdown of how that paper connects to your work — relevance score, concept mappings, and concrete implementation suggestions.
 
