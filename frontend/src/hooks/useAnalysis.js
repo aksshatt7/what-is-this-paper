@@ -1,6 +1,8 @@
 import { useState } from 'react'
 
-const API_BASE = '/api'
+// In production (Vercel), set VITE_API_BASE_URL to your Railway backend URL.
+// In local dev this falls back to /api, which Vite proxies to localhost:8000.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 export const LOADING_STAGES = [
   'Fetching paper',
