@@ -27,12 +27,13 @@ Most researchers find papers through keyword search and then manually evaluate w
 │                                                                 │
 │  ContextPanel          AnalysisPanel         ResultCard         │
 │  ┌─────────────┐       ┌──────────────┐      ┌─────────────┐   │
-│  │ Research    │       │ PDF drop     │      │ Score       │   │
-│  │ context     │       │ zone         │      │ Summary     │   │
-│  │ textarea    │       │              │      │ Mappings    │   │
-│  │             │       │ Multi-step   │      │ Suggestions │   │
-│  │ [Try demo]  │       │ progress     │      │             │   │
-│  │ [Set Ctx]   │       │ indicator    │      │ [Copy .md]  │   │
+│  │ Demo paper  │       │ Selected     │      │ Score       │   │
+│  │ cards       │       │ paper CTA    │      │ Summary     │   │
+│  │ (5 papers)  │       │ + PDF drop   │      │ Mappings    │   │
+│  │             │       │ zone         │      │ Suggestions │   │
+│  │ Context     │       │ Multi-step   │      │             │   │
+│  │ textarea    │       │ progress     │      │ [Copy .md]  │   │
+│  │ [Set Ctx]   │       │ indicator    │      │             │   │
 │  └─────────────┘       └──────────────┘      └─────────────┘   │
 │          │                    │                                  │
 │          └──── useAnalysis hook (fetch + state management) ─────┘
@@ -43,16 +44,16 @@ Most researchers find papers through keyword search and then manually evaluate w
 ┌─────────────────────────────────────────────────────────────────┐
 │                         BACKEND (FastAPI)                       │
 │                                                                 │
-│  POST /set-context          POST /analyze-paper                 │
-│  ┌──────────────┐           ┌──────────────────────────────┐   │
-│  │ SessionStore │           │ 1. Validate PDF + session     │   │
-│  │ (in-memory   │           │ 2. pdf_parser → text chunks   │   │
-│  │  dict)       │           │ 3. run_analysis_chain()       │   │
-│  └──────────────┘           └──────────────────────────────┘   │
-│                                          │                      │
-└──────────────────────────────────────────┼──────────────────────┘
-                                           │
-                                           ▼
+│  POST /set-context    POST /analyze-paper   POST /analyze-url  │
+│  ┌──────────────┐     ┌──────────────────┐  ┌───────────────┐  │
+│  │ SessionStore │     │ 1. Validate PDF   │  │ 1. Fetch PDF  │  │
+│  │ (in-memory   │     │ 2. pdf_parser     │  │    via httpx  │  │
+│  │  dict)       │     │ 3. analysis chain │  │ 2. pdf_parser │  │
+│  └──────────────┘     └──────────────────┘  │ 3. chain      │  │
+│                                              └───────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      AI CHAIN (3 sequential calls)              │
 │                                                                 │
@@ -157,10 +158,12 @@ Only the first 6 chunks (`MAX_CHUNKS`) are sent to the AI — enough to cover ab
 
 | Feature | Details |
 |---|---|
-| **Demo mode** | "Try a demo" button pre-fills context + instantly renders pre-baked results. No API credits spent per visitor. |
-| **Multi-step progress** | 4-stage indicator (Parsing PDF → Extracting key methods → Mapping to context → Generating suggestions) advances on a timer while the API is in flight. |
+| **Demo paper picker** | 5 curated classic ML papers (Transformers, LoRA, ResNet, Focal Loss, PPO) — click any to auto-fill a tailored context and analyze it live. |
+| **Server-side PDF fetch** | Demo papers are fetched from arXiv by the backend (`/analyze-url`), so no manual download is needed. |
+| **Context size guard** | `/set-context` rejects inputs over 12,000 characters with a clear error. Prevents accidental context-length errors from large file uploads. |
+| **Multi-step progress** | 4-stage indicator (Fetching paper → Extracting key methods → Mapping to context → Generating suggestions) advances on a timer while the API is in flight. |
 | **Export** | Copy as Markdown (clipboard) or Download .md — formatted with headers, method tags, concept mapping table, and suggestion blocks. |
-| **Low relevance handling** | Score ≤ 3 triggers an honest banner: *"This paper has low relevance to your context — suggestions are speculative."* |
+| **Low relevance handling** | Score ≤ 3 triggers an honest banner: *"Low relevance — suggestions below are speculative."* |
 | **File context loader** | Upload `.py`, `.ipynb`, or `.txt` files directly as context — the browser reads them locally, no extra upload. |
 
 ---
@@ -175,6 +178,7 @@ Only the first 6 chunks (`MAX_CHUNKS`) are sent to the AI — enough to cover ab
 | Backend | FastAPI (Python 3.12) | Async-native, automatic OpenAPI docs, minimal boilerplate |
 | AI | OpenAI `gpt-4o-mini` | Cost-efficient for multi-call chains; easily swappable to Claude |
 | PDF parsing | PyMuPDF (`fitz`) | Fast, reliable text layer extraction |
+| HTTP client | `httpx` | Async PDF fetching from arXiv URLs in `/analyze-url` |
 | Session storage | In-memory dict | Appropriate for single-user portfolio; swap for Redis in production |
 
 ---
@@ -184,7 +188,7 @@ Only the first 6 chunks (`MAX_CHUNKS`) are sent to the AI — enough to cover ab
 ```
 research-analyzer/
 ├── backend/
-│   ├── main.py           # FastAPI app, route definitions, CORS
+│   ├── main.py           # FastAPI app, routes, CORS, context size guard
 │   ├── ai_chain.py       # 3-step prompt chain (the core logic)
 │   ├── pdf_parser.py     # PDF → text extraction + overlap chunking
 │   ├── session_store.py  # In-memory context store (keyed by session_id)
@@ -192,13 +196,13 @@ research-analyzer/
 │   └── .env.example
 ├── frontend/
 │   └── src/
-│       ├── App.jsx                     # Root layout, session ID, demo handler
-│       ├── demo.js                     # Demo context + pre-baked analysis data
+│       ├── App.jsx                     # Root layout, session ID, selectedPaper state
+│       ├── demo.js                     # 5 curated demo papers with preset contexts
 │       ├── hooks/
 │       │   └── useAnalysis.js          # All fetch logic, loading state, stage timer
 │       └── components/
-│           ├── ContextPanel.jsx        # Left column: context textarea + demo button
-│           ├── AnalysisPanel.jsx       # Right column: PDF drop zone + progress indicator
+│           ├── ContextPanel.jsx        # Left column: demo paper cards + context textarea
+│           ├── AnalysisPanel.jsx       # Right column: paper CTA + PDF drop zone + results
 │           └── ResultCard.jsx          # Results display + markdown export
 ├── chain_test.py         # Run the AI chain standalone (no server needed)
 └── README.md
@@ -262,8 +266,9 @@ Edit `USER_CONTEXT` and `PAPER_EXCERPT` at the top of the file to test different
 | Method | Endpoint | Body | Description |
 |---|---|---|---|
 | `GET` | `/health` | — | Liveness check |
-| `POST` | `/set-context` | `{ session_id, context }` | Save research context for a session |
-| `POST` | `/analyze-paper?session_id=X` | `multipart/form-data` (PDF file) | Run full analysis chain, return results |
+| `POST` | `/set-context` | `{ session_id, context }` | Save research context for a session. Returns 400 if context exceeds 12,000 characters. |
+| `POST` | `/analyze-paper?session_id=X` | `multipart/form-data` (PDF file) | Upload a PDF and run the full analysis chain. |
+| `POST` | `/analyze-url` | `{ session_id, pdf_url }` | Fetch a PDF from a URL (e.g. arXiv) server-side and run the analysis chain. Used by the demo paper picker. |
 
 FastAPI auto-generates interactive docs at `http://localhost:8000/docs`.
 
@@ -282,6 +287,12 @@ For a single-user portfolio demo, a fixed ID is correct. A multi-user version wo
 
 **Why 6 chunks?**
 6 chunks × ~375 tokens ≈ 2,250 tokens of paper text — enough to cover abstract, introduction, and the start of the methods section in most papers. Sending the entire paper would hit context limits on long papers and significantly increase cost per analysis. The most important content is almost always in the first ~9,000 characters.
+
+**Why a 12,000-character context limit?**
+Without a limit, uploading a large `.ipynb` or codebase file as context produces a 200k+ token request that immediately hits the model's context window. 12,000 characters (~3,000 tokens) is generous for a pipeline description while leaving ample headroom for paper text and output across three API calls.
+
+**Why fetch demo PDFs server-side instead of pre-baking results?**
+Pre-baked results are faster but static — they can't adapt to a user's custom context. Server-side fetching via `/analyze-url` means every demo paper runs real analysis against whatever context the user has set, which demonstrates the product's actual capability rather than canned output.
 
 ---
 
