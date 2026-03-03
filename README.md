@@ -6,6 +6,10 @@ Built as a portfolio project demonstrating prompt chain design, async API archit
 
 ![Demo](https://img.shields.io/badge/status-live-brightgreen) ![Python](https://img.shields.io/badge/Python-3.12-blue) ![React](https://img.shields.io/badge/React-18-61DAFB) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)
 
+**Live demo:** [research-analyzer-two.vercel.app](https://research-analyzer-two.vercel.app)
+
+![Screenshot](Screenshot%202026-03-03%20at%203.00.33%20PM.png)
+
 ---
 
 ## What It Does
