@@ -54,6 +54,7 @@ async def run_analysis_chain(user_context: str, chunks: List[str]) -> dict:
     than asking all three questions in a single prompt.
     """
     paper_text = "\n\n---\n\n".join(chunks[:MAX_CHUNKS])
+    user_context = user_context[:12_000]  # guard against oversized context reaching the chain
 
     # ── Step 1: Summarize the paper ──────────────────────────────────────────
     summary_raw = _call(
