@@ -8,7 +8,7 @@ Built as a portfolio project demonstrating prompt chain design, async API archit
 
 **Live demo:** [research-analyzer-two.vercel.app](https://research-analyzer-two.vercel.app)
 
-![Screenshot](screenshot.png)
+![Screenshot](ss.png)
 
 ---
 
